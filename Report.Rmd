@@ -1,0 +1,41 @@
+---
+title: 'STAT 3302 Project Report'
+author: "Edison Gu, "
+date: "04/17/2020"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, cache = TRUE)
+library(tidyverse)
+# library(readr)
+# library(alr4)
+library(GGally)
+# library(broom)
+# library(ggpubr)
+tb <- read_csv("Employee_Attrition.csv")
+```
+
+## Data Preprocessing
+
+```{r preprocessing}
+eply_attn = tb
+
+glimpse(eply_attn)
+
+```
+
+## EDA
+
+```{r EDA}
+# ggpairs(eply_attn)
+for (i in seq_along(eply_attn)){
+        print(paste(i,")",colnames(eply_attn)[i]))
+        if(length(pull(unique(eply_attn[i])))<20){
+                 plot = eply_attn %>% ggplot() + geom_bar(aes_string(colnames(eply_attn)[i]))
+        } else {
+                plot = eply_attn %>% ggplot() + geom_density(aes_string(colnames(eply_attn)[i]))
+        }
+        print(plot)
+}
+```
