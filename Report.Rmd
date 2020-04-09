@@ -19,23 +19,65 @@ tb <- read_csv("Employee_Attrition.csv")
 ## Data Preprocessing
 
 ```{r preprocessing}
-eply_attn = tb
+ea = tb
 
-glimpse(eply_attn)
+glimpse(ea)
 
 ```
 
 ## EDA
 
 ```{r EDA}
-# ggpairs(eply_attn)
-for (i in seq_along(eply_attn)){
-        print(paste(i,")",colnames(eply_attn)[i]))
-        if(length(pull(unique(eply_attn[i])))<20){
-                 plot = eply_attn %>% ggplot() + geom_bar(aes_string(colnames(eply_attn)[i]))
+# ggpairs(ea)
+for (i in seq_along(ea)){
+        print(paste(i,")",colnames(ea)[i]))
+        if(length(pull(unique(ea[i])))<40){
+                 plot = ea %>% ggplot() + geom_bar(aes_string(colnames(ea)[i]))
         } else {
-                plot = eply_attn %>% ggplot() + geom_density(aes_string(colnames(eply_attn)[i]))
+                plot = ea %>% ggplot() + geom_density(aes_string(colnames(ea)[i]))
         }
         print(plot)
 }
 ```
+
+```{r}
+ea %>% select(HourlyRate, DailyRate, MonthlyRate, MonthlyIncome) %>% 
+        ggpairs()
+```
+
+
+```{r}
+df = ea %>% select(MonthlyRate, MonthlyIncome)
+par(mfrow=c(1,1))
+matplot(t(df), type="l", xaxt="n", col="gray",
+        xlab="Variable", ylab="Measurement")
+axis(side=1, at=1:2, names(df))
+points(1:2, colMeans(df), cex=1, pch=20, type="b", lwd=2)
+```
+
+```{r}
+df = ea %>% select(YearsInCurrentRole, YearsWithCurrManager)
+df %>% ggplot(aes(x=YearsInCurrentRole, y =YearsWithCurrManager))+geom_jitter()
+df %>% ggplot(aes(x=YearsInCurrentRole, y =YearsWithCurrManager))+geom_point()
+```
+
+```{r}
+par(mfrow=c(1,1))
+matplot(t(df), type="l", xaxt="n", col="gray",
+        xlab="Variable", ylab="Measurement")
+axis(side=1, at=1:2, names(df))
+points(1:2, colMeans(df), cex=1, pch=20, type="b", lwd=2)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
