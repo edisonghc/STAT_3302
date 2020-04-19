@@ -13,13 +13,73 @@ library(tidyverse)
 library(GGally)
 # library(broom)
 # library(ggpubr)
+
+# Source of the dataset: 
+# https://www.kaggle.com/pavansubhasht/ibm-hr-analytics-attrition-dataset
+
+
 tb <- read_csv("Employee_Attrition.csv")
 ```
 
 ## Data Preprocessing
 
 ```{r preprocessing}
-ea = tb
+education_level = c('Below College','College','Bachelor','Master','Doctor')
+satisfaction_level = c('Low','Medium','High','Very High')
+rating_level = c('Low','Good','Excellent','Outstanding')
+balance_level = c('Bad','Good','Better','Best')
+
+ea = tb %>% mutate(Attrition = ifelse(Attrition == "Yes", 1, 0),
+                   Education = factor(case_when(
+                           Education == 1 ~ 'Below College',
+                           Education == 2 ~ 'College',
+                           Education == 3 ~ 'Bachelor',
+                           Education == 4 ~ 'Master',
+                           Education == 5 ~ 'Doctor'),
+                           levels = education_level),
+                   EnvironmentSatisfaction = factor(case_when(
+                           EnvironmentSatisfaction == 1 ~ 'Low',
+                           EnvironmentSatisfaction == 2 ~ 'Medium',
+                           EnvironmentSatisfaction == 3 ~ 'High',
+                           EnvironmentSatisfaction == 4 ~ 'Very High'),
+                           levels = satisfaction_level),
+                   JobInvolvement = factor(case_when(
+                           JobInvolvement == 1 ~ 'Low',
+                           JobInvolvement == 2 ~ 'Medium',
+                           JobInvolvement == 3 ~ 'High',
+                           JobInvolvement == 4 ~ 'Very High'),
+                           level = satisfaction_level),
+                   JobSatisfaction = factor(case_when(
+                           JobSatisfaction == 1 ~ 'Low',
+                           JobSatisfaction == 2 ~ 'Medium',
+                           JobSatisfaction == 3 ~ 'High',
+                           JobSatisfaction == 4 ~ 'Very High'),
+                           level = satisfaction_level),
+                   PerformanceRating = factor(case_when(
+                           PerformanceRating == 1 ~ 'Low',
+                           PerformanceRating == 2 ~ 'Good',
+                           PerformanceRating == 3 ~ 'Excellent',
+                           PerformanceRating == 4 ~ 'Outstanding'),
+                           level = rating_level),
+                   RelationshipSatisfaction = factor(case_when(
+                           RelationshipSatisfaction == 1 ~ 'Low',
+                           RelationshipSatisfaction == 2 ~ 'Medium',
+                           RelationshipSatisfaction == 3 ~ 'High',
+                           RelationshipSatisfaction == 4 ~ 'Very High'),
+                           level = satisfaction_level),
+                   WorkLifeBalance = factor(case_when(
+                           WorkLifeBalance == 1 ~ 'Bad',
+                           WorkLifeBalance == 2 ~ 'Good',
+                           WorkLifeBalance == 3 ~ 'Better',
+                           WorkLifeBalance == 4 ~ 'Best'),
+                           level = balance_level)) %>% 
+        select(Attrition, Age, BusinessTravel, Department, DistanceFromHome,
+               Education, EducationField, EnvironmentSatisfaction, Gender,
+               JobInvolvement, JobLevel, JobRole, JobSatisfaction, MaritalStatus, 
+               MonthlyIncome, NumCompaniesWorked, OverTime, PercentSalaryHike,
+               RelationshipSatisfaction,StockOptionLevel,TotalWorkingYears,
+               TrainingTimesLastYear, WorkLifeBalance, YearsAtCompany, YearsInCurrentRole,
+               YearsSinceLastPromotion, YearsWithCurrManager)
 
 glimpse(ea)
 
@@ -31,8 +91,10 @@ glimpse(ea)
 # ggpairs(ea)
 for (i in seq_along(ea)){
         print(paste(i,")",colnames(ea)[i]))
-        if(length(pull(unique(ea[i])))<40){
-                 plot = ea %>% ggplot() + geom_bar(aes_string(colnames(ea)[i]))
+        if(length(pull(unique(ea[i])))<30){
+                 plot = ea %>% ggplot() + 
+                         geom_bar(aes_string(colnames(ea)[i])) + 
+                         coord_flip()
         } else {
                 plot = ea %>% ggplot() + geom_density(aes_string(colnames(ea)[i]))
         }
@@ -41,7 +103,7 @@ for (i in seq_along(ea)){
 ```
 
 ```{r}
-ea %>% select(HourlyRate, DailyRate, MonthlyRate, MonthlyIncome) %>% 
+tb %>% select(HourlyRate, DailyRate, MonthlyRate, MonthlyIncome) %>% 
         ggpairs()
 ```
 
@@ -69,12 +131,36 @@ axis(side=1, at=1:2, names(df))
 points(1:2, colMeans(df), cex=1, pch=20, type="b", lwd=2)
 ```
 
+```{r}
+model1 = glm(data = ea, family = binomial,
+             Attrition ~ Age + BusinessTravel + Department + DistanceFromHome +
+                     EnvironmentSatisfaction + JobInvolvement + JobLevel + JobRole +
+                     JobSatisfaction + MaritalStatus + MonthlyIncome + NumCompaniesWorked + 
+                     OverTime + RelationshipSatisfaction + StockOptionLevel + TotalWorkingYears + 
+                     TrainingTimesLastYear + WorkLifeBalance + YearsAtCompany + YearsInCurrentRole + 
+                     YearsSinceLastPromotion + YearsWithCurrManager)
+
+model1 %>% summary()
+model1 %>% anova(test="Chisq")
+
+```
 
 
+```{r}
+ea %>% select(Attrition, Age , YearsInCurrentRole) %>% 
+        ggpairs()
+
+```
 
 
+```{r}
+model2 = glm(data = ea, family = binomial,
+             Attrition ~ JobRole)
 
+model2 %>% summary()
+model2 %>% anova(test="Chisq")
 
+```
 
 
 
