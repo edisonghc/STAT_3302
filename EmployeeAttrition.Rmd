@@ -1,0 +1,458 @@
+---
+title: "Stat 3302 Project: Employee Attrition"
+author: "Avery Warner"
+date: "4/19/2020"
+output: html_document
+---
+
+```{r, echo=FALSE, message=FALSE}
+library(tidyverse)
+library(kableExtra)
+```
+
+The dataset consists of 16 continuous and 17 categorical predictors that may contribute to attrition rates. These predictors span ordinal, binomial, count, and rate variables among other types. The response in this data is a binomial Yes or No for whether or not an employee left the company. We are interested in this data because understanding attrition habits can improve a companies retention rates. While some factors that lead to employee attrition are out of others' control, it may be possible to better understand patterns that lead to employees switching their job. Therefore, this data is worth exploring in order to find out more. 
+
+**Scientific Question:** What are some of the factors that lead to employee attrition? What factors, or interaction thereof, are more likely to lead to attrition than others?
+
+```{r, echo=FALSE}
+attrition <- read_csv("Programming/R/Stat 3302/Project/Employee_Attrition.csv", 
+    col_types = cols(DailyRate = col_skip(), 
+        EmployeeCount = col_skip(), EmployeeNumber = col_skip(), 
+        HourlyRate = col_skip(), MonthlyRate = col_skip(), 
+        Over18 = col_skip(), StandardHours = col_skip()))
+
+attrition$Attrition <- ifelse(attrition$Attrition == 'Yes', 1, 0)
+```
+
+# Exploratory Data Analysis
+
+### Logit of the Proportion of Employee Attrition over...
+
+```{r, echo=FALSE, fig.height=4, fig.width=4.5}
+par(mfrow = c(5, 2))
+
+attrition_age = attrition %>% 
+  mutate(Age = round((Age)/5)*5)
+
+attrition_age = attrition_age %>% 
+  group_by(Age) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+
+attrition_age = attrition_age %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+
+ggplot(mapping = aes(x = Age, y = logit_of_prob), data = attrition_age) +
+  geom_point(aes(size = count)) +
+  xlab("Rounded Age") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...Age")
+
+attrition_dist = attrition %>% 
+  mutate(DistanceFromHome = round((DistanceFromHome)/5)*5)
+
+attrition_dist = attrition_dist %>% 
+  group_by(DistanceFromHome) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+
+attrition_dist = attrition_dist %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+
+ggplot(mapping = aes(x = DistanceFromHome, y = logit_of_prob), data = attrition_dist) +
+  geom_point(aes(size = count)) +
+  xlab("Rounded DistanceFromHome") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...DistanceFromHome")
+
+attrition_income = attrition %>% 
+  mutate(MonthlyIncome = round((MonthlyIncome)/2000)*2000)
+
+attrition_income = attrition_income %>% 
+  group_by(MonthlyIncome) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+
+attrition_income = attrition_income %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+
+ggplot(mapping = aes(x = MonthlyIncome, y = logit_of_prob), data = attrition_income) +
+  geom_point(aes(size = count)) +
+  xlab("Rounded MonthlyIncome") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...MonthlyIncome")
+
+attrition_num_comp = attrition %>% 
+  group_by(NumCompaniesWorked) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+
+attrition_num_comp = attrition_num_comp %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+
+ggplot(mapping = aes(x = NumCompaniesWorked, y = logit_of_prob), data = attrition_num_comp) +
+  geom_point(aes(size = count)) +
+  xlab("NumCompaniesWorked") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...NumCompaniesWorked")
+
+attrition_sal_hike = attrition %>% 
+  group_by(PercentSalaryHike) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+
+attrition_sal_hike = attrition_sal_hike %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+
+ggplot(mapping = aes(x = PercentSalaryHike, y = logit_of_prob), data = attrition_sal_hike) +
+  geom_point(aes(size = count)) +
+  xlab("PercentSalaryHike") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...PercentSalaryHike")
+
+attrition_total_years = attrition %>% 
+  mutate(TotalWorkingYears = round((TotalWorkingYears)/5)*5)
+
+attrition_total_years = attrition_total_years %>% 
+  group_by(TotalWorkingYears) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+
+attrition_total_years = attrition_total_years %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+
+ggplot(mapping = aes(x = TotalWorkingYears, y = logit_of_prob), data = attrition_total_years) +
+  geom_point(aes(size = count)) +
+  xlab("Rounded TotalWorkingYears") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...TotalWorkingYears")
+
+attrition_years_company = attrition %>% 
+  mutate(YearsAtCompany = round((YearsAtCompany)/4)*4)
+
+attrition_years_company = attrition_years_company %>% 
+  group_by(YearsAtCompany) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+
+attrition_years_company = attrition_years_company %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+
+ggplot(mapping = aes(x = YearsAtCompany, y = logit_of_prob), data = attrition_years_company) +
+  geom_point(aes(size = count)) +
+  xlab("Rounded YearsAtCompany") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...YearsAtCompany")
+
+attrition_years_role = attrition %>% 
+  mutate(YearsInCurrentRole = round((YearsInCurrentRole)/2)*2)
+
+attrition_years_role = attrition_years_role %>% 
+  group_by(YearsInCurrentRole) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+
+attrition_years_role = attrition_years_role %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+
+ggplot(mapping = aes(x = YearsInCurrentRole, y = logit_of_prob), data = attrition_years_role) +
+  geom_point(aes(size = count)) +
+  xlab("Rounded YearsInCurrentRole") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...YearsInCurrentRole")
+
+attrition_years_prom = attrition %>% 
+  mutate(YearsSinceLastPromotion = round((YearsSinceLastPromotion)/1)*1)
+
+attrition_years_prom = attrition_years_prom %>% 
+  group_by(YearsSinceLastPromotion) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+
+attrition_years_prom = attrition_years_prom %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+
+ggplot(mapping = aes(x = YearsSinceLastPromotion, y = logit_of_prob), data = attrition_years_prom) +
+  geom_point(aes(size = count)) +
+  xlab("YearsSinceLastPromotion") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...YearsSinceLastPromotion")
+
+attrition_with_mgr = attrition %>% 
+  mutate(YearsWithCurrManager = round((YearsWithCurrManager)/2)*2)
+
+attrition_with_mgr = attrition_with_mgr %>% 
+  group_by(YearsWithCurrManager) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+
+attrition_with_mgr = attrition_with_mgr %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+
+ggplot(mapping = aes(x = YearsWithCurrManager, y = logit_of_prob), data = attrition_with_mgr) +
+  geom_point(aes(size = count)) +
+  xlab("Rounded YearsWithCurrManager") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...YearsWithCurrManager")
+```
+
+It may be worth looking at the relationship between the logit of the probability and an inverse transformation of TotalWorkingYears due to the exponential trend. However, TotalWorkingYears includes values of '0' and the inverse of these are NaN. The current trend is not too exponential and is still reasonably linear enough to suggest a relaionship.  
+
+We can see from these plots that several of the covariates appear to have a linear relationship with the logit of the probability of employee attrition. In particular, age, distance from home, monthly income, total working years, and years in current role look to be associated with the logit. Additionally, the points in these plots that follow the linear trend are typically larger in size and the size is based on the size of the group. This suggests that the other smaller points that deviate from the linear trend may be doing so as a result of their small grouping size, as opposed to failing to follow the same pattern.  
+
+Beyond this, it is worth exploring possible interactions between terms that may be taking place:
+
+```{r, echo=FALSE, fig.height=4, fig.width=4.5}
+par(mfrow = c(5,2))
+
+attrition_income = attrition %>% 
+  mutate(MonthlyIncome = round((MonthlyIncome)/2000)*2000)
+
+attrition_income = attrition_income %>% 
+  group_by(MonthlyIncome, Gender) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+
+attrition_income = attrition_income %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+
+ggplot(mapping = aes(x = MonthlyIncome, y = logit_of_prob), data = attrition_income) +
+  geom_point(aes(size = count, color = Gender)) +
+  xlab("Rounded MonthlyIncome") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...MonthlyIncome")
+
+
+attrition_income = attrition %>% 
+  mutate(MonthlyIncome = round((MonthlyIncome)/2000)*2000)
+
+attrition_income = attrition_income %>% 
+  group_by(MonthlyIncome, EducationField) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+
+attrition_income = attrition_income %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+
+ggplot(mapping = aes(x = MonthlyIncome, y = logit_of_prob), data = attrition_income) +
+  geom_point(aes(size = count, color = EducationField)) +
+  xlab("Rounded MonthlyIncome") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...MonthlyIncome")
+
+
+attrition_dist = attrition %>% 
+  mutate(DistanceFromHome = round((DistanceFromHome)/5)*5)
+
+attrition_dist = attrition_dist %>% 
+  group_by(DistanceFromHome, MaritalStatus) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+
+attrition_dist = attrition_dist %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+
+ggplot(mapping = aes(x = DistanceFromHome, y = logit_of_prob), data = attrition_dist) +
+  geom_point(aes(size = count, color = MaritalStatus)) +
+  xlab("Rounded DistanceFromHome") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...DistanceFromHome")
+
+
+attrition_income = attrition %>% 
+  mutate(MonthlyIncome = round((MonthlyIncome)/2000)*2000)
+
+attrition_income = attrition_income %>% 
+  group_by(MonthlyIncome, EnvironmentSatisfaction) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+
+attrition_income = attrition_income %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+
+ggplot(mapping = aes(x = MonthlyIncome, y = logit_of_prob), data = attrition_income) +
+  geom_point(aes(size = count, color = as.factor(EnvironmentSatisfaction))) +
+  xlab("Rounded MonthlyIncome") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...MonthlyIncome")
+
+
+attrition_age = attrition %>% 
+  mutate(Age = round((Age)/5)*5)
+
+attrition_age = attrition_age %>% 
+  group_by(Age, Department) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+
+attrition_age = attrition_age %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+
+ggplot(mapping = aes(x = Age, y = logit_of_prob), data = attrition_age) +
+  geom_point(aes(size = count, color = Department)) +
+  xlab("Rounded Age") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...Age")
+
+
+yrsInRoleFac = cut(attrition$YearsInCurrentRole, 4)
+
+attrition_age = attrition %>% 
+  mutate(Age = round((Age)/5)*5)
+
+attrition_age = cbind(yrsInRoleFac, attrition_age)
+
+attrition_age = attrition_age %>% 
+  group_by(Age, yrsInRoleFac) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+
+attrition_age = attrition_age %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+
+ggplot(mapping = aes(x = Age, y = logit_of_prob), data = attrition_age) +
+  geom_point(aes(size = count, color = yrsInRoleFac)) +
+  xlab("Rounded Age") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...Age")
+```
+
+# Model Building
+
+### Initial Model
+
+```{r, echo=FALSE, include=FALSE}
+attrition_model = glm(formula = Attrition ~ DistanceFromHome + Age + MonthlyIncome + YearsInCurrentRole + TotalWorkingYears, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+Our initial model 
+
+### Remove TotalWorkingYears, add BusinessTravel
+
+```{r, echo=FALSE, include=FALSE}
+attrition_model = glm(formula = Attrition ~ DistanceFromHome + Age + MonthlyIncome + YearsInCurrentRole + BusinessTravel, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+### Add Gender interaction to Age covariate
+
+```{r, echo=FALSE, include=FALSE}
+attrition_model = glm(formula = Attrition ~ DistanceFromHome + Age*Gender + MonthlyIncome + YearsInCurrentRole + BusinessTravel, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+### Add JobSatisfaction as factor variable
+
+```{r, echo=FALSE, include=FALSE}
+attrition_model = glm(formula = Attrition ~ DistanceFromHome + Age*Gender + MonthlyIncome + YearsInCurrentRole + BusinessTravel + as.factor(JobSatisfaction), family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+### Switch out MaritalStatus for isSingle
+
+```{r, echo=FALSE, include=FALSE}
+attrition$isSingle = ifelse(attrition$MaritalStatus == "Single", TRUE, FALSE)
+
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age*Gender + YearsInCurrentRole + BusinessTravel + as.factor(JobSatisfaction) + isSingle + NumCompaniesWorked + RelationshipSatisfaction + TrainingTimesLastYear + WorkLifeBalance  + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+### Remove RelationshipSatisfaction
+
+```{r, echo=FALSE}
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age*Gender + YearsInCurrentRole + BusinessTravel + as.factor(JobSatisfaction) + isSingle + NumCompaniesWorked + TrainingTimesLastYear + WorkLifeBalance  + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+### Remove WorkLifeBalance
+
+```{r, echo=FALSE}
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age*Gender + YearsInCurrentRole + BusinessTravel + as.factor(JobSatisfaction) + isSingle + NumCompaniesWorked + TrainingTimesLastYear + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+### Remove TrainingTimesLastYear
+
+```{r, echo=FALSE}
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age*Gender + YearsInCurrentRole + BusinessTravel + as.factor(JobSatisfaction) + isSingle + NumCompaniesWorked + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+### Switch out JobSatisfaction for isSatisfied
+
+```{r, echo=FALSE}
+attrition$isSatisfied = ifelse(attrition$JobSatisfaction == 4, TRUE, FALSE)
+
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age*Gender + YearsInCurrentRole + BusinessTravel + isSatisfied + isSingle + NumCompaniesWorked + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+### Remove Gender and interaction
+
+```{r, echo=FALSE}
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age + YearsInCurrentRole + BusinessTravel + isSatisfied + isSingle + NumCompaniesWorked + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+### Add interaction between Age and YearsInCurrentRole
+
+```{r, echo=FALSE}
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age * YearsInCurrentRole + BusinessTravel + isSatisfied + isSingle + NumCompaniesWorked + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+### Remove YearsWithCurrManager
+
+```{r, echo=FALSE}
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age * YearsInCurrentRole + BusinessTravel + isSatisfied + isSingle + NumCompaniesWorked + YearsSinceLastPromotion, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+# Model Selection
+
+
+
+# Diagnostics
+
+
+
+# Results
+
+
+
+# Appendix
+
+
