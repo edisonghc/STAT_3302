@@ -1,169 +1,521 @@
 ---
-title: 'STAT 3302 Project Report'
-author: "Edison Gu, "
-date: "04/17/2020"
+title: "Stat 3302 Project: Employee Attrition"
+author: "Avery Warner, Manmeet Sandhu "
+date: "4/20/2020"
 output: html_document
 ---
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(warning = FALSE, message = FALSE, cache = TRUE)
+```{r, echo=FALSE, message=FALSE}
 library(tidyverse)
-# library(readr)
-# library(alr4)
-library(GGally)
-# library(broom)
-# library(ggpubr)
-
-# Source of the dataset: 
-# https://www.kaggle.com/pavansubhasht/ibm-hr-analytics-attrition-dataset
-
-
-tb <- read_csv("Employee_Attrition.csv")
+library(kableExtra)
 ```
 
-## Data Preprocessing
+The dataset consists of 16 continuous and 17 categorical predictors that may contribute to attrition rates. These predictors span ordinal, binomial, count, and rate variables among other types. The response in this data is a binomial Yes or No for whether or not an employee left the company. We are interested in this data because understanding attrition habits can improve a companies retention rates. While some factors that lead to employee attrition are out of others' control, it may be possible to better understand patterns that lead to employees switching their job. Therefore, this data is worth exploring in order to find out more. 
 
-```{r preprocessing}
-education_level = c('Below College','College','Bachelor','Master','Doctor')
-satisfaction_level = c('Low','Medium','High','Very High')
-rating_level = c('Low','Good','Excellent','Outstanding')
-balance_level = c('Bad','Good','Better','Best')
+**Scientific Question:** What are some of the factors that lead to employee attrition? What factors, or interaction thereof, are more likely to lead to attrition than others?
 
-ea = tb %>% mutate(Attrition = ifelse(Attrition == "Yes", 1, 0),
-                   Education = factor(case_when(
-                           Education == 1 ~ 'Below College',
-                           Education == 2 ~ 'College',
-                           Education == 3 ~ 'Bachelor',
-                           Education == 4 ~ 'Master',
-                           Education == 5 ~ 'Doctor'),
-                           levels = education_level),
-                   EnvironmentSatisfaction = factor(case_when(
-                           EnvironmentSatisfaction == 1 ~ 'Low',
-                           EnvironmentSatisfaction == 2 ~ 'Medium',
-                           EnvironmentSatisfaction == 3 ~ 'High',
-                           EnvironmentSatisfaction == 4 ~ 'Very High'),
-                           levels = satisfaction_level),
-                   JobInvolvement = factor(case_when(
-                           JobInvolvement == 1 ~ 'Low',
-                           JobInvolvement == 2 ~ 'Medium',
-                           JobInvolvement == 3 ~ 'High',
-                           JobInvolvement == 4 ~ 'Very High'),
-                           level = satisfaction_level),
-                   JobSatisfaction = factor(case_when(
-                           JobSatisfaction == 1 ~ 'Low',
-                           JobSatisfaction == 2 ~ 'Medium',
-                           JobSatisfaction == 3 ~ 'High',
-                           JobSatisfaction == 4 ~ 'Very High'),
-                           level = satisfaction_level),
-                   PerformanceRating = factor(case_when(
-                           PerformanceRating == 1 ~ 'Low',
-                           PerformanceRating == 2 ~ 'Good',
-                           PerformanceRating == 3 ~ 'Excellent',
-                           PerformanceRating == 4 ~ 'Outstanding'),
-                           level = rating_level),
-                   RelationshipSatisfaction = factor(case_when(
-                           RelationshipSatisfaction == 1 ~ 'Low',
-                           RelationshipSatisfaction == 2 ~ 'Medium',
-                           RelationshipSatisfaction == 3 ~ 'High',
-                           RelationshipSatisfaction == 4 ~ 'Very High'),
-                           level = satisfaction_level),
-                   WorkLifeBalance = factor(case_when(
-                           WorkLifeBalance == 1 ~ 'Bad',
-                           WorkLifeBalance == 2 ~ 'Good',
-                           WorkLifeBalance == 3 ~ 'Better',
-                           WorkLifeBalance == 4 ~ 'Best'),
-                           level = balance_level)) %>% 
-        select(Attrition, Age, BusinessTravel, Department, DistanceFromHome,
-               Education, EducationField, EnvironmentSatisfaction, Gender,
-               JobInvolvement, JobLevel, JobRole, JobSatisfaction, MaritalStatus, 
-               MonthlyIncome, NumCompaniesWorked, OverTime, PercentSalaryHike,
-               RelationshipSatisfaction,StockOptionLevel,TotalWorkingYears,
-               TrainingTimesLastYear, WorkLifeBalance, YearsAtCompany, YearsInCurrentRole,
-               YearsSinceLastPromotion, YearsWithCurrManager)
-
-glimpse(ea)
-
+```{r, echo=FALSE}
+attrition <- read_csv("WA_Fn-UseC_-HR-Employee-Attrition.csv", 
+    col_types = cols(DailyRate = col_skip(), 
+        EmployeeCount = col_skip(), EmployeeNumber = col_skip(), 
+        HourlyRate = col_skip(), MonthlyRate = col_skip(), 
+        Over18 = col_skip(), StandardHours = col_skip()))
+attrition$Attrition <- ifelse(attrition$Attrition == 'Yes', 1, 0)
 ```
 
-## EDA
+# Exploratory Data Analysis
 
-```{r EDA}
-# ggpairs(ea)
-for (i in seq_along(ea)){
-        print(paste(i,")",colnames(ea)[i]))
-        if(length(pull(unique(ea[i])))<30){
-                 plot = ea %>% ggplot() + 
-                         geom_bar(aes_string(colnames(ea)[i])) + 
-                         coord_flip()
-        } else {
-                plot = ea %>% ggplot() + geom_density(aes_string(colnames(ea)[i]))
-        }
-        print(plot)
-}
+### Logit of the Proportion of Employee Attrition over...
+
+```{r, echo=FALSE, fig.height=4, fig.width=4.5}
+par(mfrow = c(5, 2))
+attrition_age = attrition %>% 
+  mutate(Age = round((Age)/5)*5)
+attrition_age = attrition_age %>% 
+  group_by(Age) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+attrition_age = attrition_age %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+ggplot(mapping = aes(x = Age, y = logit_of_prob), data = attrition_age) +
+  geom_point(aes(size = count)) +
+  xlab("Rounded Age") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...Age")
+attrition_dist = attrition %>% 
+  mutate(DistanceFromHome = round((DistanceFromHome)/5)*5)
+attrition_dist = attrition_dist %>% 
+  group_by(DistanceFromHome) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+attrition_dist = attrition_dist %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+ggplot(mapping = aes(x = DistanceFromHome, y = logit_of_prob), data = attrition_dist) +
+  geom_point(aes(size = count)) +
+  xlab("Rounded DistanceFromHome") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...DistanceFromHome")
+attrition_income = attrition %>% 
+  mutate(MonthlyIncome = round((MonthlyIncome)/2000)*2000)
+attrition_income = attrition_income %>% 
+  group_by(MonthlyIncome) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+attrition_income = attrition_income %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+ggplot(mapping = aes(x = MonthlyIncome, y = logit_of_prob), data = attrition_income) +
+  geom_point(aes(size = count)) +
+  xlab("Rounded MonthlyIncome") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...MonthlyIncome")
+attrition_num_comp = attrition %>% 
+  group_by(NumCompaniesWorked) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+attrition_num_comp = attrition_num_comp %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+ggplot(mapping = aes(x = NumCompaniesWorked, y = logit_of_prob), data = attrition_num_comp) +
+  geom_point(aes(size = count)) +
+  xlab("NumCompaniesWorked") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...NumCompaniesWorked")
+attrition_sal_hike = attrition %>% 
+  group_by(PercentSalaryHike) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+attrition_sal_hike = attrition_sal_hike %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+ggplot(mapping = aes(x = PercentSalaryHike, y = logit_of_prob), data = attrition_sal_hike) +
+  geom_point(aes(size = count)) +
+  xlab("PercentSalaryHike") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...PercentSalaryHike")
+attrition_total_years = attrition %>% 
+  mutate(TotalWorkingYears = round((TotalWorkingYears)/5)*5)
+attrition_total_years = attrition_total_years %>% 
+  group_by(TotalWorkingYears) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+attrition_total_years = attrition_total_years %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+ggplot(mapping = aes(x = TotalWorkingYears, y = logit_of_prob), data = attrition_total_years) +
+  geom_point(aes(size = count)) +
+  xlab("Rounded TotalWorkingYears") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...TotalWorkingYears")
+attrition_years_company = attrition %>% 
+  mutate(YearsAtCompany = round((YearsAtCompany)/4)*4)
+attrition_years_company = attrition_years_company %>% 
+  group_by(YearsAtCompany) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+attrition_years_company = attrition_years_company %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+ggplot(mapping = aes(x = YearsAtCompany, y = logit_of_prob), data = attrition_years_company) +
+  geom_point(aes(size = count)) +
+  xlab("Rounded YearsAtCompany") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...YearsAtCompany")
+attrition_years_role = attrition %>% 
+  mutate(YearsInCurrentRole = round((YearsInCurrentRole)/2)*2)
+attrition_years_role = attrition_years_role %>% 
+  group_by(YearsInCurrentRole) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+attrition_years_role = attrition_years_role %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+ggplot(mapping = aes(x = YearsInCurrentRole, y = logit_of_prob), data = attrition_years_role) +
+  geom_point(aes(size = count)) +
+  xlab("Rounded YearsInCurrentRole") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...YearsInCurrentRole")
+attrition_years_prom = attrition %>% 
+  mutate(YearsSinceLastPromotion = round((YearsSinceLastPromotion)/1)*1)
+attrition_years_prom = attrition_years_prom %>% 
+  group_by(YearsSinceLastPromotion) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+attrition_years_prom = attrition_years_prom %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+ggplot(mapping = aes(x = YearsSinceLastPromotion, y = logit_of_prob), data = attrition_years_prom) +
+  geom_point(aes(size = count)) +
+  xlab("YearsSinceLastPromotion") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...YearsSinceLastPromotion")
+attrition_with_mgr = attrition %>% 
+  mutate(YearsWithCurrManager = round((YearsWithCurrManager)/2)*2)
+attrition_with_mgr = attrition_with_mgr %>% 
+  group_by(YearsWithCurrManager) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+attrition_with_mgr = attrition_with_mgr %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+ggplot(mapping = aes(x = YearsWithCurrManager, y = logit_of_prob), data = attrition_with_mgr) +
+  geom_point(aes(size = count)) +
+  xlab("Rounded YearsWithCurrManager") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("...YearsWithCurrManager")
 ```
 
-```{r}
-tb %>% select(HourlyRate, DailyRate, MonthlyRate, MonthlyIncome) %>% 
-        ggpairs()
+It may be worth looking at the relationship between the logit of the probability and an inverse transformation of TotalWorkingYears due to the exponential trend. However, TotalWorkingYears includes values of '0' and the inverse of these are NaN. The current trend is not too exponential and is still reasonably linear enough to suggest a relaionship.  
+
+We can see from these plots that several of the covariates appear to have a linear relationship with the logit of the probability of employee attrition. In particular, age, distance from home, monthly income, total working years, and years in current role look to be associated with the logit. Additionally, the points in these plots that follow the linear trend are typically larger in size and the size is based on the size of the group. This suggests that the other smaller points that deviate from the linear trend may be doing so as a result of their small grouping size, as opposed to failing to follow the same pattern.  
+
+Beyond this, it is worth exploring possible interactions between terms that may be taking place:
+
+In the following plots the size of the point is determined by the size of the group the respective point represents.
+
+```{r, echo=FALSE, fig.height=6, fig.width=4.5}
+par(mfrow = c(3,2))
+attrition_income_gender = attrition %>% 
+  mutate(MonthlyIncome = round((MonthlyIncome)/2000)*2000)
+attrition_income_gender = attrition_income_gender %>% 
+  group_by(MonthlyIncome, Gender) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+attrition_income_gender = attrition_income_gender %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+ggplot(mapping = aes(x = MonthlyIncome, y = logit_of_prob), data = attrition_income_gender) +
+  geom_point(aes(size = count, color = Gender)) +
+  xlab("Rounded MonthlyIncome") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("MonthlyIncome and Gender Interaction") +
+  labs(subtitle = "Figure 1") +
+  theme(legend.position = "bottom", legend.box = "vertical", legend.title = element_blank()) +
+  guides(color = guide_legend(order=1),
+         size = guide_legend(order=2))
+attrition_income_field = attrition %>% 
+  mutate(MonthlyIncome = round((MonthlyIncome)/2000)*2000)
+attrition_income_field = attrition_income_field %>% 
+  group_by(MonthlyIncome, EducationField) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+attrition_income_field = attrition_income_field %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+ggplot(mapping = aes(x = MonthlyIncome, y = logit_of_prob), data = attrition_income_field) +
+  geom_point(aes(size = count, color = EducationField)) +
+  xlab("Rounded MonthlyIncome") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("MonthlyIncome and EducationField Interaction") +
+  labs(subtitle = "Figure 2") +
+  theme(legend.position = "bottom", legend.box = "vertical", legend.title = element_blank())
+attrition_dist_marital = attrition %>% 
+  mutate(DistanceFromHome = round((DistanceFromHome)/5)*5)
+attrition_dist_marital = attrition_dist_marital %>% 
+  group_by(DistanceFromHome, MaritalStatus) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+attrition_dist_marital = attrition_dist_marital %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+ggplot(mapping = aes(x = DistanceFromHome, y = logit_of_prob), data = attrition_dist_marital) +
+  geom_point(aes(size = count, color = MaritalStatus)) +
+  xlab("Rounded DistanceFromHome") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("DistanceFromHome and MaritalStatus Interaction") +
+  labs(subtitle = "Figure 3") +
+  theme(legend.position = "bottom", legend.box = "vertical", legend.title = element_blank())
+attrition_income_environ = attrition %>% 
+  mutate(MonthlyIncome = round((MonthlyIncome)/2000)*2000)
+attrition_income_environ = attrition_income_environ %>% 
+  group_by(MonthlyIncome, EnvironmentSatisfaction) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+attrition_income_environ = attrition_income_environ %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+ggplot(mapping = aes(x = MonthlyIncome, y = logit_of_prob), data = attrition_income_environ) +
+  geom_point(aes(size = count, color = as.factor(EnvironmentSatisfaction))) +
+  xlab("Rounded MonthlyIncome") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("MonthlyIncome and EnvironmentSatis. Interaction") +
+  labs(subtitle = "Figure 4") +
+  theme(legend.position = "bottom", legend.box = "vertical", legend.title = element_blank()) +
+  guides(color = guide_legend(order=1),
+         size = guide_legend(order=2))
+attrition_age_dept = attrition %>% 
+  mutate(Age = round((Age)/5)*5)
+attrition_age_dept = attrition_age_dept %>% 
+  group_by(Age, Department) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+attrition_age_dept = attrition_age_dept %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+ggplot(mapping = aes(x = Age, y = logit_of_prob), data = attrition_age_dept) +
+  geom_point(aes(size = count, color = Department)) +
+  xlab("Rounded Age") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("Age and Department Interaction") +
+  labs(subtitle = "Figure 5") +
+  theme(legend.position = "bottom", legend.box = "vertical", legend.title = element_blank()) +
+  guides(color = guide_legend(order=1),
+         size = guide_legend(order=2))
+yrsInRoleFac = cut(attrition$YearsInCurrentRole, 4)
+attrition_age_yrsRole = attrition %>% 
+  mutate(Age = round((Age)/5)*5)
+attrition_age_yrsRole = cbind(yrsInRoleFac, attrition_age_yrsRole)
+attrition_age_yrsRole = attrition_age_yrsRole %>% 
+  group_by(Age, yrsInRoleFac) %>% 
+  summarize(count = n(), probability = sum(Attrition == 1) / n())
+attrition_age_yrsRole = attrition_age_yrsRole %>% 
+  mutate(logit_of_prob = log(probability / (1 - probability)))
+ggplot(mapping = aes(x = Age, y = logit_of_prob), data = attrition_age_yrsRole) +
+  geom_point(aes(size = count, color = yrsInRoleFac)) +
+  xlab("Rounded Age") +
+  ylab("Logit of the Probability of Employee Attrition") +
+  ggtitle("Age and YearsInCurrentRole Interaction") +
+  labs(subtitle = "Figure 6") +
+  theme(legend.position = "bottom", legend.box = "vertical", legend.title = element_blank()) +
+  guides(color = guide_legend(order=1),
+         size = guide_legend(order=2))
 ```
 
+These interaction plots are able to provide us with some more insight into how the covariates may be interacting with each other, or not, in determining the logit of the probability of employee attrition. There does not appear to be much of an interaction in figure 1 between the monthly income of an employee and their gender for the logit of the probability. There may be some linear trends present for each individual gender but the slope of those look to be similar for any linear trend. 
 
-```{r}
-df = ea %>% select(MonthlyRate, MonthlyIncome)
-par(mfrow=c(1,1))
-matplot(t(df), type="l", xaxt="n", col="gray",
-        xlab="Variable", ylab="Measurement")
-axis(side=1, at=1:2, names(df))
-points(1:2, colMeans(df), cex=1, pch=20, type="b", lwd=2)
+When looking at the plot in figure 2 with an employee's monthly income and their education there doesn't seem to be any linear associations present. There looks to be a potential cubic trend for the life sciences field, but overall monthly income doesn't appear to interact with education field for the logit.  
+
+In figure 3, an employee's marital status does appear to be correlated with their distance from home and possess a linear relationship with the logit. However, the slopes for those who are single or married appear to be similar or the some. There isn't a strong linear relationship for those who have been divorced but the presence of linear relationships across factor values is still promising.  
+
+There does appear to be some differing correlations between the logit and monthly income based on am employee's environment satisfaction (with 1 being the lowest and 4 being the highest) in figure 4. In order words, there is reason to believe there may be different slopes for each different satisfaction level's relationship between monthly income and logit of the probability of attrition. However, the points are still scattered and scarce enough to prevent certainty.  
+
+Another interaction looked at was between the age and department of an employee in figure 5. The interaction plot shows linear relationships between the logit and age for each department. However, the slope of the trend for each department looks to be similar. Therefore, there may not be much of an interaction going on between age and department, but age still looks to be associated with the logit.  
+
+Lastly in figure 6, there looks to be some linear trends going on across age for each color, or cut of 4.5 years for years that an employee has been in their current role. Furthermore, the slopes for these linear trends across age appear to be different for each year group. The number of points for the two longest tenured group is small so we can't be completely confident, but the current look may suggest an interaction between age and years in current role.
+
+# Model Building
+
+Based on our insight from the marginal and joint interaction plots against the logit we begin with an initial model and build off of it using model summaries and ANOVA tables to determine the useful and less impactful variables and interactions in the model. We will use model building to better understand what seems to lead to employee attrition.
+
+### Initial Model
+
+Our initial model will include each continuous main effect that looked to be correlated in the marginal logit plots (age, distance from home, monthly income, years in current role, and total working years). Additionally, we will include an interaction between distance from home and marital status. This interaction showed linear relationships but potentially similar slopes in its plot, so it is worth exploring more.
+
+```{r, echo=FALSE, include=FALSE}
+attrition_model = glm(formula = Attrition ~ DistanceFromHome*MaritalStatus + Age + MonthlyIncome + YearsInCurrentRole + TotalWorkingYears, family = binomial, data = attrition)
+summary(attrition_model)
 ```
 
-```{r}
-df = ea %>% select(YearsInCurrentRole, YearsWithCurrManager)
-df %>% ggplot(aes(x=YearsInCurrentRole, y =YearsWithCurrManager))+geom_jitter()
-df %>% ggplot(aes(x=YearsInCurrentRole, y =YearsWithCurrManager))+geom_point()
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
 ```
 
-```{r}
-par(mfrow=c(1,1))
-matplot(t(df), type="l", xaxt="n", col="gray",
-        xlab="Variable", ylab="Measurement")
-axis(side=1, at=1:2, names(df))
-points(1:2, colMeans(df), cex=1, pch=20, type="b", lwd=2)
+The only significant covariates in this model are the marital status of single factor variable, age, monthly income, and years in current role (all at $\alpha = 0.05$ level) and the intercept at the $\alpha = 0.01$ level. Also, the AIC of this moel is 1199.4. The analysis of deviance tells us that the sequential addition of each variable is useful in the model except for total working years and the interaction term. Since the individual terms in the interaction are significant we will only drop their interaction, along with the total working years term.
+
+### Remove TotalWorkingYears, add BusinessTravel, remove interaction
+
+Since we have assessed many of the continuous variables with the logit plots it will be helpful to consider the impact of the factor variables in the data when model building. Therefore, our next model includes the business travel factor variable in place of the total working years variable and no interaction between distance from home and marital status.
+
+```{r, echo=FALSE, include=FALSE}
+attrition_model = glm(formula = Attrition ~ DistanceFromHome + MaritalStatus + Age + MonthlyIncome + YearsInCurrentRole + BusinessTravel, family = binomial, data = attrition)
+summary(attrition_model)
 ```
 
-```{r}
-model1 = glm(data = ea, family = binomial,
-             Attrition ~ Age + BusinessTravel + Department + DistanceFromHome +
-                     EnvironmentSatisfaction + JobInvolvement + JobLevel + JobRole +
-                     JobSatisfaction + MaritalStatus + MonthlyIncome + NumCompaniesWorked + 
-                     OverTime + RelationshipSatisfaction + StockOptionLevel + TotalWorkingYears + 
-                     TrainingTimesLastYear + WorkLifeBalance + YearsAtCompany + YearsInCurrentRole + 
-                     YearsSinceLastPromotion + YearsWithCurrManager)
-
-model1 %>% summary()
-model1 %>% anova(test="Chisq")
-
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
 ```
 
+Every term in this model is significant at the $\alpha = 0.05$ level except for the marital status of married factor variable (which has no significance). The AIC of this model is an improvement at 1173.5. Additionally, our analysis of deviance tells us that the addition of each variable in the model is significant. With the impact of each individual factor level in mind we will alter the marital status variable into an isSingle variable that indicates '1' for cases when an employee is single and '0' otherwise.
 
-```{r}
-ea %>% select(Attrition, Age , YearsInCurrentRole) %>% 
-        ggpairs()
+### Switch out MaritalStatus for isSingle
 
+This model is the same as the previous except for the replacement of the MaritalStatus term with the isSingle variable.
+
+```{r, echo=FALSE, include=FALSE}
+attrition$isSingle = ifelse(attrition$MaritalStatus == "Single", TRUE, FALSE)
+attrition_model = glm(formula = Attrition ~ DistanceFromHome + isSingle + Age + MonthlyIncome + YearsInCurrentRole + BusinessTravel, family = binomial, data = attrition)
+summary(attrition_model)
 ```
 
-
-```{r}
-model2 = glm(data = ea, family = binomial,
-             Attrition ~ JobRole)
-
-model2 %>% summary()
-model2 %>% anova(test="Chisq")
-
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
 ```
 
+Every term in this model is still significant, including the new isSingle factor variable that remains as significant as the 'single' factor level did in the marital status variable. The AIC of this model is a slight improvement at 1172.7. The switching of the factor term was not exactly necessary then but it may help to simplify the model overall. The analysis of deviance continues to signify that the addition of each variable in the model is worthy.
+
+
+### Add Gender interaction to Age covariate
+
+```{r, echo=FALSE, include=FALSE}
+attrition_model = glm(formula = Attrition ~ DistanceFromHome + Age*Gender + MonthlyIncome + YearsInCurrentRole + BusinessTravel, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+When we look at this model, we can see that all of the variables are significant at the $\alpha = 0.05$ level. Even though all of the variables are significant, the AIC went up to 1200.3 . 
+
+### Add JobSatisfaction as factor variable
+
+```{r, echo=FALSE, include=FALSE}
+attrition_model = glm(formula = Attrition ~ DistanceFromHome + Age*Gender + MonthlyIncome + YearsInCurrentRole + BusinessTravel + as.factor(JobSatisfaction), family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+### Switch out MaritalStatus for isSingle
+
+```{r, echo=FALSE, include=FALSE}
+attrition$isSingle = ifelse(attrition$MaritalStatus == "Single", TRUE, FALSE)
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age*Gender + YearsInCurrentRole + BusinessTravel + as.factor(JobSatisfaction) + isSingle + NumCompaniesWorked + RelationshipSatisfaction + TrainingTimesLastYear + WorkLifeBalance  + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+In this model, at the $\alpha = 0.05$ level, all of the variables still seem to be significant. The AIC was able to come down to 1107 which is good when comparing to the other AICs that we have so far. The interaction between Age and gender still exists as well as making JobSatisfaction a factor variable. When we look at the analysis of the deviance table, it goes to show that all the variables chosen are indeed signifcant and necessary. 
+
+
+### Remove RelationshipSatisfaction
+
+```{r, echo=FALSE, include=FALSE}
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age*Gender + YearsInCurrentRole + BusinessTravel + as.factor(JobSatisfaction) + isSingle + NumCompaniesWorked + TrainingTimesLastYear + WorkLifeBalance  + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+AIC : 1110.4
+
+### Remove WorkLifeBalance
+
+```{r, echo=FALSE, include=FALSE}
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age*Gender + YearsInCurrentRole + BusinessTravel + as.factor(JobSatisfaction) + isSingle + NumCompaniesWorked + TrainingTimesLastYear + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+AIC ; 1114.4
+
+### Remove TrainingTimesLastYear
+
+```{r, echo=FALSE, include=FALSE}
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age*Gender + YearsInCurrentRole + BusinessTravel + as.factor(JobSatisfaction) + isSingle + NumCompaniesWorked + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+AIC : 1120.5
+
+### Switch out JobSatisfaction for isSatisfied
+
+```{r, echo=FALSE, include=FALSE}
+attrition$isSatisfied = ifelse(attrition$JobSatisfaction == 4, TRUE, FALSE)
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age*Gender + YearsInCurrentRole + BusinessTravel + isSatisfied + isSingle + NumCompaniesWorked + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+AIC : 1124.8
+
+### Remove Gender and interaction
+
+```{r, echo=FALSE, include=FALSE}
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age + YearsInCurrentRole + BusinessTravel + isSatisfied + isSingle + NumCompaniesWorked + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+AIC : 1127.4
+
+### Add interaction between Age and YearsInCurrentRole
+
+```{r, echo=FALSE, include=FALSE}
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age * YearsInCurrentRole + BusinessTravel + isSatisfied + isSingle + NumCompaniesWorked + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+AIC : 1116.3
+
+### Remove YearsWithCurrManager
+
+```{r, echo=FALSE, include=FALSE}
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age * YearsInCurrentRole + BusinessTravel + isSatisfied + isSingle + NumCompaniesWorked + YearsSinceLastPromotion, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+AIC : 1119.5
+
+## Models Manmeet Added
+
+### Add an interaction between MaritalStatus and Job ROle
+
+```{r, echo=FALSE, include=FALSE}
+attrition$isSingle = ifelse(attrition$MaritalStatus == "Single", TRUE, FALSE)
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age*Gender + YearsInCurrentRole + BusinessTravel + as.factor(JobSatisfaction) + isSingle + NumCompaniesWorked + RelationshipSatisfaction + TrainingTimesLastYear + WorkLifeBalance  + YearsSinceLastPromotion + YearsWithCurrManager + MaritalStatus:JobRole, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+When we look at the model with the addition of the interaction between Marital status and Job Role, we get the lowest AIC so far. The downside to this model is that even though the AIC is small, some of the variables are not deemed significant in the model. 
+
+### Remove interaction between age and gender 
+
+```{r, echo=FALSE, include=TRUE}
+attrition$isSingle = ifelse(attrition$MaritalStatus == "Single", TRUE, FALSE)
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + YearsInCurrentRole + BusinessTravel + as.factor(JobSatisfaction) + isSingle + NumCompaniesWorked + RelationshipSatisfaction + TrainingTimesLastYear + WorkLifeBalance  + YearsSinceLastPromotion + YearsWithCurrManager + MaritalStatus:JobRole, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+With the removal of the interaction of gender and age, the AIC did go up slightly but all of the variables except for a few seem to be significant. The AIC for this model is 1109.7
+
+### Interaction between being divorced and JobROle
+
+```{r, echo=FALSE, include=FALSE}
+attrition$isDivorced = ifelse(attrition$MaritalStatus == "Divorced", TRUE, FALSE)
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age*Gender + YearsInCurrentRole + BusinessTravel + as.factor(JobSatisfaction) + isSingle + NumCompaniesWorked + RelationshipSatisfaction + TrainingTimesLastYear + WorkLifeBalance  + YearsSinceLastPromotion + YearsWithCurrManager + isDivorced:JobRole, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+ 
+ When we look at this model with an interaction between being divorced and the job role, we can see that all variables except for Gender seem to be significant according to the anova model. The AIC for this model is 1087.9 which is the smallest we have with almost variables being signifcant. 
+ 
+### Interaction between 
+
+```{r, echo=FALSE, include=FALSE}
+attrition$isDivorced = ifelse(attrition$MaritalStatus == "Divorced", TRUE, FALSE)
+attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age*Gender + YearsInCurrentRole + BusinessTravel + as.factor(JobSatisfaction) + isSingle + NumCompaniesWorked + RelationshipSatisfaction + TrainingTimesLastYear + WorkLifeBalance  + YearsSinceLastPromotion + YearsWithCurrManager + MaritalStatus:BusinessTravel, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+ 
+ When looking at this moel, at the $\alpha = 0.05$ we would determine that the addition of the interaction term is not necessary because the value is higher then 0.05. Another thing to note with this model is that the AIC went up as well to 1110.1
+
+# Model Selection
 
 
 
+# Diagnostics
 
+
+
+# Results
+
+
+
+# Appendix
 
