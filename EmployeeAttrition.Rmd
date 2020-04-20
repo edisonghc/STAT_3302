@@ -372,7 +372,6 @@ This model is the same as the previous except for the replacement of the Marital
 
 ```{r, echo=FALSE, include=FALSE}
 attrition$isSingle = ifelse(attrition$MaritalStatus == "Single", TRUE, FALSE)
-
 attrition_model = glm(formula = Attrition ~ DistanceFromHome + isSingle + Age + MonthlyIncome + YearsInCurrentRole + BusinessTravel, family = binomial, data = attrition)
 summary(attrition_model)
 ```
@@ -424,6 +423,8 @@ summary(attrition_model)
 anova(attrition_model, test = "Chisq")
 ```
 
+The AIC for this model with the addition of YearsSinceLastPromotion variable is 1146.3. This is lower then the model we previously had which is good. All of the variables in this model seem to be significant and the deviance analysis confirms that the addition of YearsSinceLastPromotion seems to be significant in the model. The next variable we would want to look at is JobSatisfaction and see if that variable is significant or not in attrition. 
+
 ### Add JobSatisfaction as a factor variable
 
 ```{r, echo=FALSE, include=FALSE}
@@ -435,11 +436,12 @@ summary(attrition_model)
 anova(attrition_model, test = "Chisq")
 ```
 
+When we make JobSatisfaction a factor variable, the AIC in this model becomes 1130.9. Again, the AIC is decreasing with is showing signs of imporvement in our model building. All of the variables in the model seem to be significant and the deviance analysis confirms this as well. This model analysis tells us that making JobSatisfaction a factor variable is significant and necessary. To help make understand and interpreting this model easier, we want to see if looking at a specific JobSatisfaction rating has an impact on attrition. 
+
 ### Replace JobSatisfaction variable with isSatisfied
 
 ```{r, echo=FALSE, include=FALSE}
 attrition$isSatisfied = ifelse(attrition$JobSatisfaction == 4, TRUE, FALSE)
-
 attrition_model = glm(formula = Attrition ~ DistanceFromHome + isSingle + Age + MonthlyIncome + YearsInCurrentRole + BusinessTravel + NumCompaniesWorked + YearsSinceLastPromotion + isSatisfied, family = binomial, data = attrition)
 summary(attrition_model)
 ```
@@ -448,11 +450,12 @@ summary(attrition_model)
 anova(attrition_model, test = "Chisq")
 ```
 
+In this model, we replaced JobSatisfaction with isSatisfied which is a 4 on the 5 point scale of JobSatisfaction. With this switch, our AIC became 1133.6 which is a little higher compared to the AIC in the previous model. Even though the AIC is a bit higher, the deviance analysis confirms that all the variables are significant and neccesary in the model. Even though this is a good model, there are no intereaction terms so the next model would have Age and YearsInCurrentRole as interaction variables to see if there is an interaction between the two and if there is a significance. 
+
 ### Include interaction between Age and YearsInCurrentRole
 
 ```{r, echo=FALSE, include=FALSE}
 attrition$isSatisfied = ifelse(attrition$JobSatisfaction == 4, TRUE, FALSE)
-
 attrition_model = glm(formula = Attrition ~ DistanceFromHome + isSingle + Age*YearsInCurrentRole + MonthlyIncome + BusinessTravel + NumCompaniesWorked + YearsSinceLastPromotion + isSatisfied + as.factor(WorkLifeBalance), family = binomial, data = attrition)
 summary(attrition_model)
 ```
@@ -461,7 +464,7 @@ summary(attrition_model)
 anova(attrition_model, test = "Chisq")
 ```
 
-
+In the final model that we created, we included an interaction between Age and YearsInCurrentRole. With this interaction term added, the AIC dropped down to 1110.8. This is the lowest AIC when comaparing to all the other models that were created. All of the variables in this model are significant. The analysis of the deviance table support the addiction of the interaction term between Age and YearsInCurrentRole. 
 
 # Model Selection
 
