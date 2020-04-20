@@ -207,7 +207,7 @@ attrition_income_gender = attrition_income_gender %>%
 attrition_income_gender = attrition_income_gender %>% 
   mutate(logit_of_prob = log(probability / (1 - probability)))
 
-ggplot(mapping = aes(x = MonthlyIncome, y = logit_of_prob, color = Gender, group = Gender), data = attrition_income_gender) +
+ggplot(mapping = aes(x = MonthlyIncome, y = logit_of_prob + 0.01, color = Gender, group = Gender), data = attrition_income_gender) +
   geom_point(aes(size = count)) +
   geom_smooth() +
   xlab("Rounded MonthlyIncome") +
@@ -226,9 +226,9 @@ attrition_income_field = attrition_income_field %>%
   summarize(count = n(), probability = sum(Attrition == 1) / n())
 
 attrition_income_field = attrition_income_field %>% 
-  mutate(logit_of_prob = log(probability / (1 - probability)))
+  mutate(logit_of_prob = log(probability / (1 - probability) + 0.01))
 
-ggplot(mapping = aes(x = MonthlyIncome, y = logit_of_prob, color = EducationField, group = EducationField), data = attrition_income_field) +
+ggplot(mapping = aes(x = MonthlyIncome, y = logit_of_prob + 0.01, color = EducationField, group = EducationField), data = attrition_income_field) +
   geom_point(aes(size = count)) +
   geom_smooth() +
   xlab("Rounded MonthlyIncome") +
@@ -413,32 +413,10 @@ anova(attrition_model, test = "Chisq")
 
 The AIC for this model with number of companies worked for instead of department is also at 1162. This time all of the variables are significant in the model, and the deviance analysis confirms that the inclusion of each variable (including NumCompaniesWorked after everything else) is significant in the model. 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-### Add Gender interaction to Age covariate
+### Add YearsSinceLastPromotion
 
 ```{r, echo=FALSE, include=FALSE}
-attrition_model = glm(formula = Attrition ~ DistanceFromHome + Age*Gender + MonthlyIncome + YearsInCurrentRole + BusinessTravel, family = binomial, data = attrition)
+attrition_model = glm(formula = Attrition ~ DistanceFromHome + isSingle + Age + MonthlyIncome + YearsInCurrentRole + BusinessTravel + NumCompaniesWorked + YearsSinceLastPromotion, family = binomial, data = attrition)
 summary(attrition_model)
 ```
 
@@ -446,10 +424,10 @@ summary(attrition_model)
 anova(attrition_model, test = "Chisq")
 ```
 
-### Add JobSatisfaction as factor variable
+### Add JobSatisfaction as a factor variable
 
 ```{r, echo=FALSE, include=FALSE}
-attrition_model = glm(formula = Attrition ~ DistanceFromHome + Age*Gender + MonthlyIncome + YearsInCurrentRole + BusinessTravel + as.factor(JobSatisfaction), family = binomial, data = attrition)
+attrition_model = glm(formula = Attrition ~ DistanceFromHome + isSingle + Age + MonthlyIncome + YearsInCurrentRole + BusinessTravel + NumCompaniesWorked + YearsSinceLastPromotion + as.factor(JobSatisfaction), family = binomial, data = attrition)
 summary(attrition_model)
 ```
 
@@ -457,58 +435,12 @@ summary(attrition_model)
 anova(attrition_model, test = "Chisq")
 ```
 
-### Switch out MaritalStatus for isSingle
-
-```{r, echo=FALSE, include=FALSE}
-attrition$isSingle = ifelse(attrition$MaritalStatus == "Single", TRUE, FALSE)
-
-attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age*Gender + YearsInCurrentRole + BusinessTravel + as.factor(JobSatisfaction) + isSingle + NumCompaniesWorked + RelationshipSatisfaction + TrainingTimesLastYear + WorkLifeBalance  + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
-summary(attrition_model)
-```
-
-```{r, echo=FALSE, include=FALSE}
-anova(attrition_model, test = "Chisq")
-```
-
-### Remove RelationshipSatisfaction
-
-```{r, echo=FALSE, include=FALSE}
-attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age*Gender + YearsInCurrentRole + BusinessTravel + as.factor(JobSatisfaction) + isSingle + NumCompaniesWorked + TrainingTimesLastYear + WorkLifeBalance  + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
-summary(attrition_model)
-```
-
-```{r, echo=FALSE, include=FALSE}
-anova(attrition_model, test = "Chisq")
-```
-
-### Remove WorkLifeBalance
-
-```{r, echo=FALSE, include=FALSE}
-attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age*Gender + YearsInCurrentRole + BusinessTravel + as.factor(JobSatisfaction) + isSingle + NumCompaniesWorked + TrainingTimesLastYear + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
-summary(attrition_model)
-```
-
-```{r, echo=FALSE, include=FALSE}
-anova(attrition_model, test = "Chisq")
-```
-
-### Remove TrainingTimesLastYear
-
-```{r, echo=FALSE, include=FALSE}
-attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age*Gender + YearsInCurrentRole + BusinessTravel + as.factor(JobSatisfaction) + isSingle + NumCompaniesWorked + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
-summary(attrition_model)
-```
-
-```{r, echo=FALSE, include=FALSE}
-anova(attrition_model, test = "Chisq")
-```
-
-### Switch out JobSatisfaction for isSatisfied
+### Replace JobSatisfaction variable with isSatisfied
 
 ```{r, echo=FALSE, include=FALSE}
 attrition$isSatisfied = ifelse(attrition$JobSatisfaction == 4, TRUE, FALSE)
 
-attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age*Gender + YearsInCurrentRole + BusinessTravel + isSatisfied + isSingle + NumCompaniesWorked + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
+attrition_model = glm(formula = Attrition ~ DistanceFromHome + isSingle + Age + MonthlyIncome + YearsInCurrentRole + BusinessTravel + NumCompaniesWorked + YearsSinceLastPromotion + isSatisfied, family = binomial, data = attrition)
 summary(attrition_model)
 ```
 
@@ -516,10 +448,12 @@ summary(attrition_model)
 anova(attrition_model, test = "Chisq")
 ```
 
-### Remove Gender and interaction
+### Include interaction between Age and YearsInCurrentRole
 
 ```{r, echo=FALSE, include=FALSE}
-attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age + YearsInCurrentRole + BusinessTravel + isSatisfied + isSingle + NumCompaniesWorked + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
+attrition$isSatisfied = ifelse(attrition$JobSatisfaction == 4, TRUE, FALSE)
+
+attrition_model = glm(formula = Attrition ~ DistanceFromHome + isSingle + Age*YearsInCurrentRole + MonthlyIncome + BusinessTravel + NumCompaniesWorked + YearsSinceLastPromotion + isSatisfied + as.factor(WorkLifeBalance), family = binomial, data = attrition)
 summary(attrition_model)
 ```
 
@@ -527,35 +461,50 @@ summary(attrition_model)
 anova(attrition_model, test = "Chisq")
 ```
 
-### Add interaction between Age and YearsInCurrentRole
 
-```{r, echo=FALSE, include=FALSE}
-attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age * YearsInCurrentRole + BusinessTravel + isSatisfied + isSingle + NumCompaniesWorked + YearsSinceLastPromotion + YearsWithCurrManager, family = binomial, data = attrition)
-summary(attrition_model)
-```
-
-```{r, echo=FALSE, include=FALSE}
-anova(attrition_model, test = "Chisq")
-```
-
-### Remove YearsWithCurrManager
-
-```{r, echo=FALSE, include=FALSE}
-attrition_model = glm(formula = Attrition ~ MonthlyIncome + DistanceFromHome + Age * YearsInCurrentRole + BusinessTravel + isSatisfied + isSingle + NumCompaniesWorked + YearsSinceLastPromotion, family = binomial, data = attrition)
-summary(attrition_model)
-```
-
-```{r, echo=FALSE, include=FALSE}
-anova(attrition_model, test = "Chisq")
-```
 
 # Model Selection
 
+We choose to move forward with the last model including the DistanceFromHome continuous, isSingle factor, Age continuous and YearsInCurrentRole continuous interaction, MonthlyIncome continuous, BusinessTravel factor, NumCompaniesWorked continuous, YearsSinceLastPromotion continuous, isSatisfied factor, and WorkLifeBalance factor variables. The AIC for this final model is 1110.8. Each term in the model is significant at the $\alpha = 0.05$ level, and the analysis of deviance confirms that the sequential inclusion of each covariate in the model is significant (at the $\alpha = 0.01$ level).
 
+```{r}
+x = anova(attrition_model, test = "Chisq")
+kable(x)
+```
 
 # Diagnostics
 
+```{r, echo=FALSE}
+attrition_dev_resid = residuals(attrition_model, type = "deviance")
+```
 
+```{r, echo=FALSE, fig.height=4, fig.width=4.5, message=FALSE}
+par(mfrow=c(2,2))
+
+ggplot(data = attrition_model, aes(x = fitted.values(attrition_model), y = attrition_dev_resid)) +
+  geom_point() +
+  xlab("fitted values") +
+  ylab("dev. residuals") +
+  geom_abline(slope = 0, intercept = 0)
+
+ggplot(data = attrition_model, aes(x = Age, y = attrition_dev_resid)) +
+  geom_point() +
+  xlab("Age") +
+  ylab("dev. residuals") +
+  geom_abline(slope = 0, intercept = 0)
+
+ggplot(data = attrition_model, aes(x = MonthlyIncome, y = attrition_dev_resid)) +
+  geom_point() +
+  xlab("MonthlyIncome") +
+  ylab("dev. residuals") +
+  geom_abline(slope = 0, intercept = 0)
+
+ggplot(data = fortify(attrition_model), aes(sample = resid(attrition_model))) +
+  geom_qq() +
+  geom_qq_line() +
+  xlab("z score") +
+  ylab("dev. residuals")
+```
 
 # Results
 
