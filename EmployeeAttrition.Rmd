@@ -1,11 +1,9 @@
 ---
 title: 'Stat 3302 Project: Employee Attrition'
-author: "Avery Warner"
+author: "Avery Warner, Manmeet Sandhu, Edison Gu"
 date: "4/20/2020"
-output:
-  pdf_document: default
-  html_document: default
-  word_document: default
+output: html_document
+fontsize: 12pt
 ---
 
 ```{r, echo=FALSE, message=FALSE}
@@ -191,7 +189,7 @@ ggplot(mapping = aes(x = YearsWithCurrManager, y = logit_of_prob), data = attrit
   ggtitle("...YearsWithCurrManager")
 ```
 
-It may be worth looking at the relationship between the logit of the probability and an inverse transformation of TotalWorkingYears due to the exponential trend. However, TotalWorkingYears includes values of '0' and the inverse of these are NaN. The current trend is not too exponential and is still reasonably linear enough to suggest a relaionship.  
+It may be worth looking at the relationship between the logit of the probability and an inverse transformation of TotalWorkingYears due to the exponential trend. However, TotalWorkingYears includes values of '0' and the inverse of these are NaN. The current trend is not too exponential and is still reasonably linear enough to suggest a relationship.  
 
 We can see from these plots that several of the covariates appear to have a linear relationship with the logit of the probability of employee attrition. In particular, age, distance from home, monthly income, total working years, and years in current role look to be associated with the logit. Additionally, the points in these plots that follow the linear trend are typically larger in size and the size is based on the size of the group. This suggests that the other smaller points that deviate from the linear trend may be doing so as a result of their small grouping size, as opposed to failing to follow the same pattern.  
 
@@ -409,7 +407,7 @@ After adding this variable the AIC drops from 1172 to 1162. However, the only va
 
 ### Remove Department, add NumCompaniesWorked
 
-This model possess all other covariates as before excpet the department term and includes the number of companies an employee has worked for instead.
+This model possess all other covariates as before except the department term and includes the number of companies an employee has worked for instead.
 
 ```{r, echo=FALSE, include=FALSE}
 attrition_model = glm(formula = Attrition ~ DistanceFromHome + isSingle + Age + MonthlyIncome + YearsInCurrentRole + BusinessTravel + NumCompaniesWorked, family = binomial, data = attrition)
@@ -467,7 +465,7 @@ summary(attrition_model)
 anova(attrition_model, test = "Chisq")
 ```
 
-In this model, we replaced JobSatisfaction with isSatisfied. With this switch, our AIC became 1133.6 which is a little higher compared to the AIC in the previous model. Even though the AIC is a bit higher, the deviance analysis confirms that all the variables are significant and neccesary in the model and the model arguably becomes more simple with less overall main effect terms. Even though this is a good model, there are no intereaction terms so the next model would have Age and YearsInCurrentRole as interaction variables to see if there is an interaction between the two and if there is a significance. 
+In this model, we replaced JobSatisfaction with isSatisfied. With this switch, our AIC became 1133.6 which is a little higher compared to the AIC in the previous model. Even though the AIC is a bit higher, the deviance analysis confirms that all the variables are significant and necessary in the model and the model arguably becomes more simple with less overall main effect terms. Even though this is a good model, there are no interaction terms so the next model would have Age and YearsInCurrentRole as interaction variables to see if there is an interaction between the two and if there is a significance. 
 
 ### Include interaction between Age and YearsInCurrentRole
 
@@ -482,7 +480,7 @@ summary(attrition_model)
 anova(attrition_model, test = "Chisq")
 ```
 
-In the final model that we created, we included an interaction between Age and YearsInCurrentRole. With this interaction term added, the AIC dropped down to 1119.5. This is the lowest AIC thus far when comaparing to all the other models that were created. All of the variables in this model are highly significant. The analysis of the deviance table support the addition of the interaction term between Age and YearsInCurrentRole, as it is still seen as useful after the addition and variability explained by the prior covariates. 
+In the final model that we created, we included an interaction between Age and YearsInCurrentRole. With this interaction term added, the AIC dropped down to 1119.5. This is the lowest AIC thus far when comparing to all the other models that were created. All of the variables in this model are highly significant. The analysis of the deviance table support the addition of the interaction term between Age and YearsInCurrentRole, as it is still seen as useful after the addition and variability explained by the prior covariates. 
 
 ### Add WorkLifeBalance factor variable
 
@@ -589,4 +587,36 @@ summary(attrition_model)
 anova(attrition_model, test = "Chisq")
 ```
 
+The final model is represented by:
+
+\[
+ logit(p_i) = \beta_0 + \beta_1 (DistanceFromHome) + \alpha_2 (isSingle) + \beta_3 (Age) + \beta_4 (YearsInCurrentRole) + \beta_5 (MonthlyIncome) + \alpha_6 (BusinessTravel) +
+\]
+\[
+ \beta_7 (NumCompaniesWorked) + \beta_8 (YearsSinceLastPromotion) + \alpha_9 (isSatisfied) + \beta_{10} (isSatisfied) +
+\]
+\[
+ \alpha_{11} (WorkLifeBalance) + \gamma_{12} (Age \times YearsInCurrentRole)
+\]
+
+where $p_i$ is the probability of an employee leaving the company, $\beta$ are the continuous main effects, $\alpha$ are the factor main effects, and $\gamma$ is the interaction effect.
+
+A one mile increase in the DistanceFromHome variable is associated with a $e^{.03364} = 1.034212$ multiplicative change in the odds of employee attrition. A 95% confidence interval for this change is given by
+
+\[
+[e^{\hat{\beta_1} - 1.96 * SE(\hat{\beta_1})}, e^{\hat{\beta_1} + 1.96 * SE(\hat{\beta_1})}] = [e^{.03364 - 1.96 * .6070}, e^{.03364 + 1.96 * .6070}] = [0.3147175, 3.398588]
+\]. 
+
+Since this interval does contain zero, we don't believe DistanceFromHome has an impact on the multiplicative change in the odds. 
+
+Those who are single are associated with a $e^{.8992} = 2.457636$ multiplicative change in the odds of employee attrition as compared to those who are married or divorced. 
+
+A one unit increase in MonthlyIncome is associated with a $e^{.00009151} = 1.000092$ multiplicative change in the odds for employee attrition. 
+
+One more year since their last promotion is associated with a $e^{.1175} = 1.124682$ multiplicative change in the odds for that employee to leave.
+
+Those who have a WorkLifeBalance of 3 (on a scale from 1 to 4) are associated with a multiplicative change of $e^{-1.095} = 0.3345396$ in employee attrition as compared to those who have a WorkLifeBalance of 1.
+
 An increase in age of one year is associated with a multiplicative change of $e^{-.07132 + .01039 \times YearsInCurrentRole}$ in employee attrition for a given YearsInCurrentRole. 
+
+Overall, our analysis shows that DistanceFromHome, isSingle, Age, YearsInCurrentRole, MonthlyIncome, BusinessTravel, NumCompaniesWorked, YearsSinceLastPromotion, isSatisfied, WorkLifeBalance, and an interaction between an employees Age and their YearsInCurrentRole all contribute to the potential of an employee to leave a company. It seems as though there are many potential factors that could lead to employee attrition, and so it is likely a challenging aspect for company leaders to manage. However, we believe our model still helps to better understand employee patterns. For future research, being able to explore more interactions between variables may help to garner a better understanding of the situation and improve employee retainment.
