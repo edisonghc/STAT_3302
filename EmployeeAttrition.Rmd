@@ -626,7 +626,7 @@ A one mile increase in the DistanceFromHome variable is associated with a $e^{.0
 [e^{\hat{\beta_1} - 1.96 * SE(\hat{\beta_1})}, e^{\hat{\beta_1} + 1.96 * SE(\hat{\beta_1})}] = [e^{.03364 - 1.96 * .6070}, e^{.03364 + 1.96 * .6070}] = [0.3147175, 3.398588]
 \]. 
 
-Since this interval does contain zero, we don't believe DistanceFromHome has an impact on the multiplicative change in the odds. 
+Since this interval does contain one, we don't believe DistanceFromHome has an impact on the multiplicative change in the odds. 
 
 Those who are single are associated with a $e^{.8992} = 2.457636$ multiplicative change in the odds of employee attrition as compared to those who are married or divorced. 
 
