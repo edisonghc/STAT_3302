@@ -1,8 +1,11 @@
 ---
-title: "Stat 3302 Project: Employee Attrition"
+title: 'Stat 3302 Project: Employee Attrition'
 author: "Avery Warner"
 date: "4/20/2020"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
 ---
 
 ```{r, echo=FALSE, message=FALSE}
@@ -508,42 +511,82 @@ kable(deviance)
 
 # Diagnostics
 
+We will now plot the residuals of our model against several variables in the data that are not included in the model. This is done in order to see if a variable has a (higher order) relationship with the deviance residuals and should be included in the model:
+
 ```{r, echo=FALSE}
 attrition_dev_resid = residuals(attrition_model, type = "deviance")
 ```
 
 ```{r, echo=FALSE, fig.height=4, fig.width=4.5, message=FALSE}
-par(mfrow=c(2,2))
+par(mfrow=c(1,2))
 
-ggplot(data = attrition_model, aes(x = fitted.values(attrition_model), y = attrition_dev_resid)) +
+ggplot(data = attrition, aes(x = YearsAtCompany, y = attrition_dev_resid, color = as.factor(Attrition))) +
   geom_point() +
-  xlab("fitted values") +
+  geom_smooth() +
+  labs(color = "Attrition") +
+  xlab("YearsAtCompany") +
   ylab("dev. residuals") +
   geom_abline(slope = 0, intercept = 0)
 
-ggplot(data = attrition_model, aes(x = Age, y = attrition_dev_resid)) +
+ggplot(data = attrition, aes(x = as.factor(Education), y = attrition_dev_resid, color = as.factor(Attrition))) +
   geom_point() +
-  xlab("Age") +
+  geom_smooth() +
+  labs(color = "Attrition") +
+  xlab("Education") +
   ylab("dev. residuals") +
   geom_abline(slope = 0, intercept = 0)
-
-ggplot(data = attrition_model, aes(x = MonthlyIncome, y = attrition_dev_resid)) +
-  geom_point() +
-  xlab("MonthlyIncome") +
-  ylab("dev. residuals") +
-  geom_abline(slope = 0, intercept = 0)
-
-ggplot(data = fortify(attrition_model), aes(sample = resid(attrition_model))) +
-  geom_qq() +
-  geom_qq_line() +
-  xlab("z score") +
-  ylab("dev. residuals")
 ```
+
+There looks to be a potential linear trend between the number of years an employee has been at the company and the residuals (for those who did end up leaving). This trend could suggest that YearsAtCompany may be useful in the model and is worth looking into. The plot for education versus the residuals is like many of the other plots left out of the report. The variance of the residuals over each factor level looks to be consistent and does not suggest the respective variable (Education in this case) is necessary in the model.
+
+```{r, echo=FALSE, message=FALSE, fig.align='center'}
+ggplot(data = attrition, aes(x = EducationField, y = attrition_dev_resid, color = as.factor(Attrition))) +
+  geom_point() +
+  geom_smooth() +
+  coord_flip() +
+  labs(color = "Attrition") +
+  xlab("EducationField") +
+  ylab("dev. residuals") +
+  geom_abline(slope = 0, intercept = 0)
+```
+
+The deviance residuals don't appear to vary much over the different education fields and so this variable is likely not very useful in the model.
+
+```{r, echo=FALSE, message=FALSE, fig.align='center'}
+ggplot(data = attrition, aes(x = JobRole, y = attrition_dev_resid, color = as.factor(Attrition))) +
+  geom_point() +
+  geom_smooth() +
+  coord_flip() +
+  labs(color = "Attrition") +
+  xlab("JobRole") +
+  ylab("dev. residuals") +
+  geom_abline(slope = 0, intercept = 0)
+```
+
+Similarly, the residuals appear to vary consistently over the different job roles. The only noticeable pattern is that those in higher level positions (managers/directors) do not appear to leave the company as often as other roles. The inclusion of a factor variable that separates managers and directors from other roles may be useful in determining employee attrition but we are content with our current model.
+
+We will now add YearsAtCompany into our chosen model in order to assess its impact.
+
+```{r, echo=FALSE, include=FALSE}
+attrition_model = glm(formula = Attrition ~ DistanceFromHome + isSingle + Age * YearsInCurrentRole + MonthlyIncome + BusinessTravel + NumCompaniesWorked + YearsSinceLastPromotion + isSatisfied + as.factor(WorkLifeBalance) + YearsAtCompany, family = binomial, data = attrition)
+summary(attrition_model)
+```
+
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
+
+The AIC for this model with all of the prior terms and YearsAtCompany increases from 1110 to 1112. Furthermore, the model summary shows that the only variable that is not significant in the model is this newly added term. The deviance analysis also shows that this YearsAtCompany variable is the only variable not worth adding into the model after considering the impact of prior covariates. Therefore, we will remove this term and keep our other model that seems to explain decent variability.
 
 # Results
 
-An increase  $e^{-.07132 + .01039} = 0.9408891$
+```{r, echo=FALSE, include=FALSE}
+attrition_model = glm(formula = Attrition ~ DistanceFromHome + isSingle + Age * YearsInCurrentRole + MonthlyIncome + BusinessTravel + NumCompaniesWorked + YearsSinceLastPromotion + isSatisfied + as.factor(WorkLifeBalance), family = binomial, data = attrition)
+summary(attrition_model)
+```
 
-# Appendix
+```{r, echo=FALSE, include=FALSE}
+anova(attrition_model, test = "Chisq")
+```
 
-
+An increase in age of one year is associated with a multiplicative change of $e^{-.07132 + .01039 \times YearsInCurrentRole}$ in employee attrition for a given YearsInCurrentRole. 
