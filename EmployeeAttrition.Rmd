@@ -3,9 +3,27 @@ title: 'Stat 3302 Project: Employee Attrition'
 author: "Avery Warner, Manmeet Sandhu, Edison Gu"
 date: "4/20/2020"
 output: html_document
-fontsize: 12pt
-mainfont: A
 ---
+
+<style type="text/css">
+
+body, td {
+   font-size: 12px;
+   font-family: "Times New Roman", Times, serif;
+   line-height: 2.0;
+}
+code.r{
+  font-size: 12px;
+  font-family: "Times New Roman", Times, serif;
+  line-height: 2.0;
+}
+pre {
+  font-size: 12px
+  font-family: "Times New Roman", Times, serif;
+  line-height: 2.0;
+}
+</style>
+
 
 ```{r, echo=FALSE, message=FALSE}
 library(tidyverse)
@@ -17,7 +35,7 @@ The dataset consists of 16 continuous and 17 categorical predictors that may con
 **Scientific Question:** What are some of the factors that lead to employee attrition? What factors, or interaction thereof, are more likely to lead to attrition than others?
 
 ```{r, echo=FALSE}
-attrition <- read_csv("Programming/R/Stat 3302/Project/Employee_Attrition.csv", 
+attrition <- read_csv("Employee_Attrition.csv", 
     col_types = cols(DailyRate = col_skip(), 
         EmployeeCount = col_skip(), EmployeeNumber = col_skip(), 
         HourlyRate = col_skip(), MonthlyRate = col_skip(), 
