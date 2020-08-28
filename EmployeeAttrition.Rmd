@@ -4,6 +4,7 @@ author: "Avery Warner, Manmeet Sandhu, Edison Gu"
 date: "4/20/2020"
 output: html_document
 fontsize: 12pt
+mainfont: A
 ---
 
 ```{r, echo=FALSE, message=FALSE}
